@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: chat-universal-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: chat
@@ -17,13 +18,14 @@ services:
       retries: 10
 
   app:
-    build: .
+    container_name: chat-universal-server
+    image: ghcr.io/gipierogiglio-prog/chat-universal-server:latest
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://chat:${POSTGRES_PASSWORD:-chat}@db:5432/chat_universal?schema=public
+      DATABASE_URL: postgresql://chat:***@db:5432/chat_universal?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       HERMES_API_KEY: ${HERMES_API_KEY:-hermes-secret-key}
       OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openclaw-secret-key}
@@ -32,7 +34,13 @@ services:
       - uploads:/app/uploads
     ports:
       - "3001:3001"
+    networks:
+      - devgiglio-network
 
 volumes:
   pgdata:
   uploads:
+
+networks:
+  devgiglio-network:
+    external: true
