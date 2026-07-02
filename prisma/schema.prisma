@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  displayName  String?
+  isBot        Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  memberships    ConversationMember[]
+  messages       Message[]
+  contactsOwned  Contact[]            @relation("ContactOwner")
+  contactEntries Contact[]            @relation("ContactTarget")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  ownerId   String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  owner  User @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  target User @relation("ContactTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, targetId])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  type      String // "direct" | "group"
+  name      String? // group name (null for direct)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  role           String   @default("member") // "admin" | "member"
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String?
+  type           String   @default("text") // "text" | "image" | "file" | "system" | "notification"
+  content        String
+  fileUrl        String?
+  fileName       String?
+  fileSize       Int?
+  source         String   @default("chat") // "chat" | "api" | "hermes" | "openclaw"
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+}
