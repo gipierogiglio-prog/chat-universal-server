@@ -29,11 +29,11 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       HERMES_API_KEY: ${HERMES_API_KEY:-hermes-secret-key}
       OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openclaw-secret-key}
-      PORT: 3001
+      PORT: 3030
     volumes:
       - uploads:/app/uploads
     ports:
-      - "3001:3001"
+      - "3030:3030"
     networks:
       - devgiglio-network
 
