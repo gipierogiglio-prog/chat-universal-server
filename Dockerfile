@@ -20,5 +20,5 @@ RUN npm ci --omit=dev
 COPY prisma ./prisma
 RUN npx prisma generate
 COPY --from=builder /app/dist ./dist
-EXPOSE 3030
+EXPOSE 3032
 CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
