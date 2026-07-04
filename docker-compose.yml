@@ -27,7 +27,7 @@ services:
     environment:
       DATABASE_URL: postgresql://chat:***@db:5432/chat_universal?schema=public
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      HERMES_API_KEY: ${HERMES_API_KEY:-hermes-secret-key}
+      HERMES_API_KEY: hermes-integration-test-key
       OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openclaw-secret-key}
       PORT: 3032
       CORS_ORIGIN: https://chat-universal.devgiglio.uk
