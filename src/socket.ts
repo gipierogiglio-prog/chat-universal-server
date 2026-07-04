@@ -129,6 +129,7 @@ async function forwardToBotWebhook(
     username: sender.username,
     text: content,
     conversation_id: conversationId,
+    bot_username: botMember.user.username,
   };
 
   // Show "Hermes está digitando…" until the reply arrives via the
