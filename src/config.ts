@@ -15,6 +15,7 @@ export const config = {
   jwtExpiresIn: "7d" as const,
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
   hermesApiKey: process.env.HERMES_API_KEY ?? "",
+  hermesWebhookUrl: process.env.HERMES_WEBHOOK_URL ?? "",
   openclawApiKey: process.env.OPENCLAW_API_KEY ?? "",
   uploadDir: process.env.UPLOAD_DIR ?? "uploads",
   maxUploadBytes: 20 * 1024 * 1024,

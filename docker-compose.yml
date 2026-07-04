@@ -31,6 +31,7 @@ services:
       OPENCLAW_API_KEY: ${OPENCLAW_API_KEY:-openclaw-secret-key}
       PORT: 3032
       CORS_ORIGIN: https://chat-universal.devgiglio.uk
+      HERMES_WEBHOOK_URL: ${HERMES_WEBHOOK_URL:-http://172.17.0.1:8645/inbound}
     volumes:
       - uploads:/app/uploads
     ports:

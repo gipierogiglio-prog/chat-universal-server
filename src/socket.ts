@@ -4,6 +4,7 @@ import { prisma } from "./db.js";
 import { verifyToken } from "./middleware/auth.js";
 import { createAndDeliverMessage } from "./lib/deliver.js";
 import { convRoom, userRoom } from "./lib/io.js";
+import { config } from "./config.js";
 
 const sendSchema = z.object({
   conversationId: z.string().min(1),
@@ -68,6 +69,13 @@ export function setupSocket(io: Server) {
           source: "chat",
         });
         ack?.({ ok: true, message });
+
+        // ── Forward to external agent if this conversation is with a bot ──
+        if (config.hermesWebhookUrl) {
+          forwardToBotWebhook(data.conversationId, userId, data.content).catch(
+            (err) => console.error("bot forward failed", err)
+          );
+        }
       } catch (err) {
         console.error("message:send failed", err);
         ack?.({ ok: false, error: "Internal error" });
@@ -83,4 +91,54 @@ export function setupSocket(io: Server) {
       });
     });
   });
+}
+
+// ─── Bot Forwarding ─────────────────────────────────────────────────────
+
+/**
+ * Forward a user message to an external bot webhook if the conversation
+ * contains a bot member (e.g. hermes_agent).
+ *
+ * Uses a configurable webhook URL (HERMES_WEBHOOK_URL) so the agent
+ * backend can be at a different address than the chat-universal server.
+ */
+async function forwardToBotWebhook(
+  conversationId: string,
+  senderId: string,
+  content: string,
+): Promise<void> {
+  const botMember = await prisma.conversationMember.findFirst({
+    where: {
+      conversationId,
+      user: { isBot: true },
+    },
+    include: { user: { select: { username: true, id: true } } },
+  });
+  if (!botMember || !config.hermesWebhookUrl) return;
+
+  // Get the sender's user info
+  const sender = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { username: true, id: true },
+  });
+  if (!sender) return;
+
+  const payload = {
+    user_id: sender.id,
+    username: sender.username,
+    text: content,
+    conversation_id: conversationId,
+  };
+
+  const response = await fetch(config.hermesWebhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    console.error(
+      `bot webhook returned ${response.status}: ${body.slice(0, 200)}`,
+    );
+  }
 }
