@@ -5,6 +5,7 @@ import { verifyToken } from "./middleware/auth.js";
 import { createAndDeliverMessage } from "./lib/deliver.js";
 import { convRoom, userRoom } from "./lib/io.js";
 import { config } from "./config.js";
+import { startBotTyping } from "./lib/botTyping.js";
 
 const sendSchema = z.object({
   conversationId: z.string().min(1),
@@ -71,7 +72,7 @@ export function setupSocket(io: Server) {
         ack?.({ ok: true, message });
 
         // ── Forward to external agent if this conversation is with a bot ──
-        if (config.hermesWebhookUrl) {
+        if (config.hermesWebhookUrl && data.type === "text") {
           forwardToBotWebhook(data.conversationId, userId, data.content).catch(
             (err) => console.error("bot forward failed", err)
           );
@@ -114,7 +115,7 @@ async function forwardToBotWebhook(
     },
     include: { user: { select: { username: true, id: true } } },
   });
-  if (!botMember || !config.hermesWebhookUrl) return;
+  if (!botMember || !config.hermesWebhookUrl || !config.hermesApiKey) return;
 
   // Get the sender's user info
   const sender = await prisma.user.findUnique({
@@ -130,9 +131,17 @@ async function forwardToBotWebhook(
     conversation_id: conversationId,
   };
 
+  // Show "Hermes está digitando…" until the reply arrives via the
+  // /api/webhooks/hermes callback (stopBotTyping there), or a safety
+  // timeout expires.
+  startBotTyping(conversationId, botMember.userId);
+
   const response = await fetch(config.hermesWebhookUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": config.hermesApiKey,
+    },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {

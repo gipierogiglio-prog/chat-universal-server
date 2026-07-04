@@ -8,6 +8,7 @@ import {
   ensureBotUser,
   findOrCreateDirectConversation,
 } from "../lib/deliver.js";
+import { stopBotTyping } from "../lib/botTyping.js";
 import { parseBody } from "../lib/validate.js";
 
 const router = Router();
@@ -70,6 +71,7 @@ for (const integration of integrations) {
         bot.id,
         target.id
       );
+      stopBotTyping(conversation.id);
       const message = await createAndDeliverMessage({
         conversationId: conversation.id,
         senderId: bot.id,
