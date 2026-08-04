@@ -37,3 +37,8 @@ stages:
   - template: stages/deploy/deploy-vps.yml@templates
     parameters:
       appName: chat-universal-server
+
+  # Registra o projeto no Console. Nunca falha o build: erro vira warning.
+  - template: stages/register/console-register.yml@templates
+    parameters:
+      appName: chat-universal-server
